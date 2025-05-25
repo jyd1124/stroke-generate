@@ -1,4 +1,4 @@
-
+// 文件 file -> URL ("data:image/png;base64,iVBORw0KGgoAAAANSUhE...")
 const readFileToURL = (file,onOver)=>{
 	var reader = new FileReader();
 	reader.onload = ()=>{
@@ -8,6 +8,9 @@ const readFileToURL = (file,onOver)=>{
 	reader.readAsDataURL(file);
 };
 
+// 将文件 file -> app.src
+// app 是你的 Vue 根实例，app.src 通常会绑定到模板中的 <img :src="src">
+// 把用户选中的文件异步读成 Base64 data URL，然后把这个 URL 推给你的 Vue 应用，让页面上对应的 <img> 自动显示这张图
 const readFileAndSetIMGSrc = file=>{
 	readFileToURL(file,src=>{
 		app.src = src;
@@ -206,12 +209,15 @@ const chooseFile = callback=>{
 	chooseFileInput.click();
 };
 
-
 const init= _=>{
 	app.loading = false;
+	// louvreInit 可能是你项目中用于准备 Canvas、WebGL 或滤镜算法的初始化函数。它接收一个回调，等所有底层资源（比如着色器、纹理、图像）准备就绪后再执行。
 	louvreInit( _=>{
+		// app.$refs.img 指向模板里用 ref="img" 标记的 <img> 元素
 		const { img } = app.$refs;
+		// 把它的 onload 事件挂到 app.setImageAndDraw，也就是当 <img> 的 src 变更并且图片真正加载完成后，就自动执行一次“设置尺寸并绘制到 Canvas”这套流程
 		img.onload = app.setImageAndDraw;
+		// 如果这个 <img> 在执行这段代码前就已经加载（比如使用的是默认 URL，且浏览器已缓存完毕），它的 complete 属性会是 true
 		if(img.complete) img.onload();
 	});
 }
@@ -227,9 +233,13 @@ app = new Vue({
 			clearTimeout(app.T)
 			app.T = setTimeout(app.louvre,ms)
 		},
+		//
 		async louvre(){
 			app.runing = true;
 			this.$nextTick(async _=>{
+				// 1. img：要处理的源图像元素（通过 ref="img" 获取）。
+				// 2. outputCanvas：结果要绘制到的 <canvas>（通过 ref="canvas" 获取）。
+				// 3. config：当前所有滤镜参数（如亮度、卷积核种类、去噪设置等），使用展开运算符合并到一个对象里。
 				await louvre({
 					img: app.$refs['img'],
 					outputCanvas: app.$refs['canvas'],
@@ -241,6 +251,7 @@ app = new Vue({
 				app.runing = false;
 			})
 		},
+		// 画布处理
 		async setImageAndDraw(){
 			const { img } = app.$refs;
 			const { naturalWidth, naturalHeight } = img;
@@ -252,6 +263,7 @@ app = new Vue({
 			app.previewHeight = previewHeight;
 			await app.louvre();
 		},
+		// 用户选中图片，将图片读成 Base64 data URL，然后把这个 URL 推给你的 Vue 应用，让页面上对应的 <img> 自动显示这张图
 		chooseFile(){
 			chooseFile(readFileAndSetIMGSrc)
 		},
