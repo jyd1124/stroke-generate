@@ -222,7 +222,6 @@ const init= _=>{
 	});
 }
 
-
 app = new Vue({
 	el:'.app',
 	data,
@@ -233,7 +232,7 @@ app = new Vue({
 			clearTimeout(app.T)
 			app.T = setTimeout(app.louvre,ms)
 		},
-		//
+		// 初始化 louvre
 		async louvre(){
 			app.runing = true;
 			this.$nextTick(async _=>{
