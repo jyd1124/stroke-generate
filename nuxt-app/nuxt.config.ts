@@ -1,39 +1,69 @@
-import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
-
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-05-15',
+  compatibilityDate: '2025-04-01',
   devtools: { enabled: true },
 
-  // 配置构建
-  build: {
-    transpile: ['vuetify'],
-  },
-
-  // 配置模块
   modules: [
-    (_options, nuxt) => {
-      nuxt.hooks.hook('vite:extendConfig', (config) => {
-        // @ts-expect-error
-        config.plugins.push(vuetify({ autoImport: true }))
-      })
-    },
+    'vuetify-nuxt-module'
   ],
 
-  // 配置Vite
-  vite: {
-    vue: {
-      template: {
-        transformAssetUrls,
+  imports: {
+    // 确保 composables 目录在自动导入列表里
+    dirs: [
+    ],
+  },
+
+  // 自动导入 components 目录里的 Vue 组件
+  components: true,
+
+  vuetify: {
+    moduleOptions: {
+      /* module specific options */
+    },
+    vuetifyOptions: {
+      theme: {
+        defaultTheme: 'light',
+        themes: {
+          light: {
+            colors: {
+              primary: '#1976D2',
+              secondary: '#424242',
+              accent: '#82B1FF',
+              error: '#FF5252',
+              info: '#2196F3',
+              success: '#4CAF50',
+              warning: '#FFC107',
+            },
+          },
+          dark: {
+            colors: {
+              primary: '#2196F3',
+              secondary: '#424242',
+              accent: '#FF4081',
+              error: '#FF5252',
+              info: '#2196F3',
+              success: '#4CAF50',
+              warning: '#FB8C00',
+            },
+          },
+        },
       },
     },
   },
 
-  // 配置CSS
-  css: [
-    'vuetify/lib/styles/main.sass',
-    '@mdi/font/css/materialdesignicons.css',
-  ],
+  /* For Nuxt 3.9.0+ */
+  features: {
+    inlineStyles: false
+  },
+
+  /* CloudFlare Pages */
+  ssr: true, // 启用SSR
+  nitro: {
+    preset: 'cloudflare',
+    prerender: {
+      autoSubfolderIndex: false
+    }
+  },
 
   // 配置应用
   app: {
