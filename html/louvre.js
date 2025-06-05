@@ -401,6 +401,8 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 
 	/**
 	 * 将先前得到的灰度线稿/阴影信息与一个预定义的彩色渐变做“融合”
+	 * •R/G/B ← 某位置的渐变色（整幅图都会被渐变填充）
+	 * •A （不透明度） ← 使得原来更暗的线稿区域（或阴影区域）更透出底色，原来更亮（白）的区域不透明。
 	 */
 	if(config.kuma){
 
@@ -410,7 +412,7 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 		// const be = bezier(0.57, 0.01, 0.43, 0.99);
 		// const s = config.s/100;
 	
-	
+		// 渐变方向是斜对角，从画布左上到右下
 		const gradient = ctx.createLinearGradient(0,0, _width,_height);
 	
 		gradient.addColorStop(0, '#fbba30');
@@ -419,8 +421,10 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 		gradient.addColorStop(.7, '#cf36df');
 		gradient.addColorStop(.8, '#37b5d9');
 		gradient.addColorStop(1, '#3eb6da');
-	
+
+		// 修改绘图样式
 		ctx.fillStyle = gradient;
+		// 填充渐变
 		ctx.fillRect(0, 0, _width, _height);
 		let gradientPixel = ctx.getImageData(0, 0, _width, _height);
 		
@@ -460,13 +464,15 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 			pixelData[i+2 ] = rgb[2];
 			pixelData[i+3 ] = 255;
 			*/
-	
+
+			// 直接使用渐变色填充 R G B
 			pixelData[i+0 ] = gradientPixel.data[i + 0];
 			pixelData[i+1 ] = gradientPixel.data[i + 1];
 			pixelData[i+2 ] = gradientPixel.data[i + 2];
-			
+			// 0 -> 完全透明 255 -> 不透明
 			y = 255 - y;
 			if(config.shade){
+				// 在“线稿轮廓”的基础上，还“额外”透出铅笔质感的粗颗粒阴影
 				y = Math.max(
 					y,
 					shadePixel.data[i]
@@ -492,6 +498,10 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 	// }
 
 	// blurC();
+	/**
+	 * 利用一个比主画布尺寸更小的临时画布 canvasMin，通过一次向下缩放（下采样）再向上放大（上采样）来实现图像的“轻度模糊”和“自然柔和”效果。
+	 * 它借助浏览器自带的图像插值机制，无需编写复杂的卷积代码，就能让铅笔线稿／阴影的颗粒感更自然，看起来更像手绘，而不是生硬的纯算法输出。
+	 */
 	ctx.putImageData(pixel, 0, 0);
 
 	const ctxMin = canvasMin.getContext('2d');
@@ -522,7 +532,8 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 		const watermarkImageHeight = watermarkImageEl.naturalHeight / 2;
 		let setWidth = _width * 0.3;
 		let setHeight = setWidth / watermarkImageWidth * watermarkImageHeight;
-	
+
+		// 画布比较偏“横长”
 		if( _width / _height  > 1.1 ){
 			setHeight = _height * 0.15;
 			setWidth = setHeight / watermarkImageHeight * watermarkImageWidth;
@@ -533,7 +544,8 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 		if(config.hajimei){
 			cutTop = watermarkImageHeight;
 		}
-	
+		// 水印会“悬浮”在右下角，距离右侧和底部都留出一点空隙，并且空隙与水印高度成正比，
+		// 无论水印实际大小如何，都有合理留白
 		let setLeft = _width - setWidth - setHeight * 0.2;
 		let setTop = _height - setHeight - setHeight * 0.16;
 		ctx.drawImage(
@@ -549,6 +561,7 @@ const louvre = async ({img, outputCanvas, config, callback}) => {
 
 	outputCanvas.width = _width;
 	outputCanvas.height = _height;
+	// 填充纯白
 	outputCtx.fillStyle = '#FFF';
 	outputCtx.fillRect(0,0,_width,_height);
 	outputCtx.drawImage(
